@@ -584,7 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // DB
     let dbReady = false;
-    const { getQuery, allQuery, runQuery } = require('./db/queries');
+    // getQuery, allQuery, runQuery are now loaded globally via index.html
 
     async function initializeDatabaseAndData() {
         const mapCustomers = async () => {
@@ -664,9 +664,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     initializeDatabaseAndData().catch(err => {
-        const fs = require('fs');
-        fs.writeFileSync('db_error.txt', err.stack || err.toString());
-        console.error(err);
+        console.error("Lỗi khởi tạo:", err);
+        alert("Lỗi kết nối cơ sở dữ liệu: " + err.message);
     });
 
 

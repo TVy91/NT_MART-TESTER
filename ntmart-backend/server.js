@@ -11,6 +11,11 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+const path = require('path');
+
+// Phục vụ toàn bộ giao diện Frontend (HTML, CSS, JS) như một trang web
+app.use(express.static(path.join(__dirname, '../')));
+
 // ==========================================
 // CÁC API THỰC HIỆN CÂU LỆNH SQL QUA HTTP
 // ==========================================

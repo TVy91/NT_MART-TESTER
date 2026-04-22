@@ -1,9 +1,9 @@
 // Không dùng database cục bộ nữa, chuyển sang gọi API Backend
 // const db = require('./database');
 
-const BACKEND_URL = 'http://localhost:3000/api/query';
+const BACKEND_URL = 'https://nt-mart-tester-1.onrender.com/api/query';
 
-const runQuery = async (sql, params = []) => {
+window.runQuery = async (sql, params = []) => {
     const response = await fetch(`${BACKEND_URL}/run`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -11,10 +11,10 @@ const runQuery = async (sql, params = []) => {
     });
     const data = await response.json();
     if (data.error) throw new Error(data.error);
-    return data; // trả về { lastID, changes } giống hệ thống cũ
+    return data;
 };
 
-const getQuery = async (sql, params = []) => {
+window.getQuery = async (sql, params = []) => {
     const response = await fetch(`${BACKEND_URL}/get`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -22,10 +22,10 @@ const getQuery = async (sql, params = []) => {
     });
     const data = await response.json();
     if (data.error) throw new Error(data.error);
-    return data; // trả về row
+    return data;
 };
 
-const allQuery = async (sql, params = []) => {
+window.allQuery = async (sql, params = []) => {
     const response = await fetch(`${BACKEND_URL}/all`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -33,7 +33,5 @@ const allQuery = async (sql, params = []) => {
     });
     const data = await response.json();
     if (data.error) throw new Error(data.error);
-    return data; // trả về rows
+    return data;
 };
-
-module.exports = { runQuery, getQuery, allQuery };
