@@ -1,5 +1,6 @@
-const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const sqlite3Path = require.resolve('sqlite3', { paths: [__dirname, path.join(__dirname, '../ntmart-backend')] });
+const sqlite3 = require(sqlite3Path).verbose();
 const dbPath = path.join(__dirname, '..', 'ntmart.db');
 
 const db = new sqlite3.Database(dbPath);
