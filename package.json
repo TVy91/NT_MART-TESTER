@@ -1,0 +1,20 @@
+{
+  "name": "nt-mart-manager",
+  "version": "1.0.0",
+  "description": "Store Management Software for NT Mart",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "NT Mart Dev Team",
+  "license": "ISC",
+  "dependencies": {
+    "firebase": "^10.0.0",
+    "jimp": "^1.6.0",
+    "png-to-ico": "^3.0.1",
+    "sqlite3": "^6.0.1"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0"
+  }
+}
