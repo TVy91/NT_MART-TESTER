@@ -605,7 +605,6 @@ document.addEventListener('DOMContentLoaded', () => {
         filteredSalesData = [...salesData];
         filteredImportData = [...importData];
     }
-
     function renderAllEntityViews() {
         if (typeof renderSales === 'function') renderSales();
         if (typeof renderImports === 'function') renderImports();
@@ -622,13 +621,19 @@ document.addEventListener('DOMContentLoaded', () => {
         imports: '/api/imports/'
     };
 
-    // Fetch data from Django API
-    fetch('/api/data/')
-        .then(res => res.json())
-        .then(data => {
-            applyApiData(data);
+    // --- CSRF Token Helper ---
+    function getCsrfToken() {
+        const cookieVal = document.cookie.split(';')
+            .map(c => c.trim())
+            .find(c => c.startsWith('csrftoken='));
+        if (cookieVal) return cookieVal.split('=')[1];
+        const metaTag = document.querySelector('meta[name="csrf-token"]');
+        if (metaTag) return metaTag.getAttribute('content');
+        const hiddenInput = document.querySelector('[name="csrfmiddlewaretoken"]');
+        if (hiddenInput) return hiddenInput.value;
+        return '';
+    }
 
-            console.log('Data loaded from API successfully!');
     // --- BACKEND SYNC ---
     window.syncWithBackend = function(action, entity, payload) {
         const baseUrl = API_RESOURCE_MAP[entity];
@@ -652,15 +657,15 @@ document.addEventListener('DOMContentLoaded', () => {
             body = JSON.stringify(payload);
         }
 
-        return fetch(requestUrl, {
-            method,
-            headers: { 'Content-Type': 'application/json' },
-            body
-        })
+        const csrfToken = getCsrfToken();
+        const headers = { 'Content-Type': 'application/json' };
+        if (csrfToken) headers['X-CSRFToken'] = csrfToken;
+
+        return fetch(requestUrl, { method, headers, body })
             .then(async (res) => {
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) {
-                    throw new Error(data.error || `Backend sync failed: ${res.status}`);
+                    throw new Error(data.detail || data.error || `Backend sync failed: ${res.status}`);
                 }
                 console.log('Sync success:', { action, entity, data });
                 return data;
@@ -672,7 +677,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     };
 
-            
+    // Fetch data from Django API
+    fetch('/api/data/')
+        .then(res => res.json())
+        .then(data => {
+            applyApiData(data);
+            console.log('Data loaded from API successfully!');
             renderAllEntityViews();
         })
         .catch(err => console.error('API Fetch Error:', err));
@@ -1861,13 +1871,37 @@ document.addEventListener('DOMContentLoaded', () => {
         handlePartyChange() {
             const selectedParty = this.getSelectedParty(this.nameInput ? this.nameInput.value : '');
             if (!selectedParty) {
-                if (this.phoneInput) this.phoneInput.value = '';
-                if (this.addressInput) this.addressInput.value = '';
+                // Clear auto-fill fields and make them editable
+                if (this.phoneInput) {
+                    this.phoneInput.value = '';
+                    this.phoneInput.readOnly = false;
+                    this.phoneInput.style.backgroundColor = '';
+                    this.phoneInput.style.color = '';
+                }
+                if (this.addressInput) {
+                    this.addressInput.value = '';
+                    this.addressInput.readOnly = false;
+                    this.addressInput.style.backgroundColor = '';
+                    this.addressInput.style.color = '';
+                }
                 return;
             }
 
-            if (this.phoneInput) this.phoneInput.value = selectedParty.phone || '';
-            if (this.addressInput) this.addressInput.value = selectedParty.address || '';
+            // Auto-fill phone and address from selected party
+            if (this.phoneInput) {
+                this.phoneInput.value = selectedParty.phone || '';
+                this.phoneInput.readOnly = true;
+                this.phoneInput.style.backgroundColor = '#f0f7ff';
+                this.phoneInput.style.color = '#0055aa';
+                this.phoneInput.title = 'Tự động điền từ dữ liệu nhà cung cấp/khách hàng';
+            }
+            if (this.addressInput) {
+                this.addressInput.value = selectedParty.address || '';
+                this.addressInput.readOnly = true;
+                this.addressInput.style.backgroundColor = '#f0f7ff';
+                this.addressInput.style.color = '#0055aa';
+                this.addressInput.title = 'Tự động điền từ dữ liệu nhà cung cấp/khách hàng';
+            }
         }
 
         async open(type, id) {
@@ -1890,14 +1924,31 @@ document.addEventListener('DOMContentLoaded', () => {
             this.syncPartyLabels();
             await this.ensurePartyDataLoaded();
 
+            // Reset phone/address to editable state before populating
+            if (this.phoneInput) {
+                this.phoneInput.readOnly = false;
+                this.phoneInput.style.backgroundColor = '';
+                this.phoneInput.style.color = '';
+            }
+            if (this.addressInput) {
+                this.addressInput.readOnly = false;
+                this.addressInput.style.backgroundColor = '';
+                this.addressInput.style.color = '';
+            }
+
             if (id === null) {
                 // ADD NEW MODE
                 this.titleEl.textContent = type === 'sales' ? 'THÊM PHIẾU BÁN HÀNG' : 'THÊM PHIẾU NHẬP HÀNG';
                 if (this.codeEl) this.codeEl.textContent = '[MỚI]';
 
-                // Clear fields
+                // Clear fields and show empty dropdown
                 this.renderPartyOptions();
-                if (this.dateInput) this.dateInput.value = new Date().toLocaleDateString('vi-VN'); // Today
+                // Format today as DD-MM-YYYY
+                const today = new Date();
+                const dd = String(today.getDate()).padStart(2, '0');
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const yyyy = today.getFullYear();
+                if (this.dateInput) this.dateInput.value = `${dd}-${mm}-${yyyy}`;
                 if (this.phoneInput) this.phoneInput.value = '';
                 if (this.addressInput) this.addressInput.value = '';
 
@@ -1928,11 +1979,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                // Populate Header
-                this.renderPartyOptions(type === 'sales' ? data.customer : data.supplier);
-                if (this.dateInput) this.dateInput.value = data.date;
-                if (this.phoneInput) this.phoneInput.value = data.phone;
-                if (this.addressInput) this.addressInput.value = data.address;
+                // Populate Header - renderPartyOptions also calls handlePartyChange which auto-fills phone/address
+                const partyName = type === 'sales' ? data.customer : data.supplier;
+                this.renderPartyOptions(partyName);
+                if (this.dateInput) this.dateInput.value = data.date || '';
+                // If party not found in list, fall back to stored values
+                const selectedParty = this.getSelectedParty(partyName);
+                if (!selectedParty) {
+                    if (this.phoneInput) this.phoneInput.value = data.phone || '';
+                    if (this.addressInput) this.addressInput.value = data.address || '';
+                }
 
                 // Populate Items
                 this.items = this.parseItemsDetail(data.itemsDetail, data.itemsStr || data.items);
@@ -1972,35 +2028,14 @@ document.addEventListener('DOMContentLoaded', () => {
         validate() {
             let isValid = true;
 
-            // 1. Header Validation (Customer/Supplier)
-            const nameVal = this.nameInput ? this.nameInput.value.trim() : '';
+            // 1. Header Validation (Customer/Supplier) - nameInput is a <select>
+            // Values come from the dropdown list so they are always valid if non-empty
+            const nameVal = this.nameInput ? (this.nameInput.value || '').trim() : '';
             if (!nameVal) {
-                this.showError(this.nameInput, this.currentType === 'sales' ? 'Vui long chon khach hang' : 'Vui long chon nha cung cap');
+                // No selection yet - just mark as invalid (no error text for dropdown)
                 isValid = false;
-                // Empty is generic error, but checking existence is stricter
-                // this.showError(this.nameInput, 'Không được để trống');
-                // isValid = false;
             } else {
-                // Relational Check
-                let exists = false;
-                if (this.currentType === 'sales') {
-                    // Check Customer Name or ID match? The form uses Name.
-                    exists = customerData.some(c => c.name.toLowerCase() === nameVal.toLowerCase());
-                    if (!exists) {
-                        this.showError(this.nameInput, 'Khách hàng không tồn tại trong hệ thống');
-                        isValid = false;
-                    } else {
-                        this.clearError(this.nameInput);
-                    }
-                } else if (this.currentType === 'imports') {
-                    exists = supplierData.some(s => s.name.toLowerCase() === nameVal.toLowerCase());
-                    if (!exists) {
-                        this.showError(this.nameInput, 'Nhà cung cấp không tồn tại trong hệ thống');
-                        isValid = false;
-                    } else {
-                        this.clearError(this.nameInput);
-                    }
-                }
+                this.clearError(this.nameInput);
             }
 
             // 2. Items Validation
@@ -2071,6 +2106,17 @@ document.addEventListener('DOMContentLoaded', () => {
             // Mock Data Format: "5x Mì Hảo Hảo, 2x Nước Suối"
             // We need to support existing format.
             if (!itemsStr) return [];
+            if (typeof itemsStr !== 'string') {
+                const fallbackCount = parseInt(itemsStr, 10);
+                if (!Number.isFinite(fallbackCount) || fallbackCount <= 0) return [];
+                return Array.from({ length: fallbackCount }, () => ({
+                    name: '',
+                    unit: '',
+                    qty: 0,
+                    price: 0,
+                    total: 0
+                }));
+            }
             return itemsStr.split(', ').map(s => {
                 const parts = s.split('x ');
                 const qty = parseInt(parts[0]) || 1;
@@ -2104,6 +2150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
+            // Legacy records may not have itemsDetail and only keep item count.
             return this.parseItemsString(fallbackItemsStr);
         }
 
