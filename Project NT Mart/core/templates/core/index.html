@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="vi">
+{% load static %}
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NT Mart - Quản Lý Cửa Hàng</title>
+    <link rel="icon" href="{% static 'core/img/icon.ico' %}" type="image/x-icon">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{% static 'core/css/style.css' %}">
+</head>
+
+<body data-initial-view="{{ initial_view|default:'login' }}">
+    {% csrf_token %}
+
+    <div id="app">
+        <!-- ==================== LOGIN VIEW ==================== -->
+        <section id="login-view" class="view active-view">
+            <div class="login-split-layout">
+                <!-- Left Side: Form -->
+                <div class="login-left">
+                    <div class="login-content-wrapper">
+                        <h1 class="login-title">Xin chào!</h1>
+
+                        <form id="login-form">
+                            <div class="form-group">
+                                <label for="username">Tài khoản</label>
+                                <input type="text" id="username" class="input-field-styled"
+                                    placeholder="Nhập tên đăng nhập" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="password">Mật khẩu</label>
+                                <input type="password" id="password" class="input-field-styled"
+                                    placeholder="Nhập mật khẩu" required>
+                            </div>
+
+                            <div class="form-options">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="remember-me">
+                                    <span class="checkmark"></span>
+                                    Ghi nhớ mật khẩu
+                                </label>
+                                <a href="#" id="link-forgot-password" class="link-text">Quên mật khẩu?</a>
+                            </div>
+
+                            <div class="btn-container">
+                                <button type="submit" class="btn btn-primary btn-login-styled">Đăng nhập</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Right Side: Logo Box -->
+                <div class="login-right">
+                    <div class="logo-box">
+                        <img src="{% static 'core/img/LogoNTMart.jfif' %}" alt="NT Mart Logo" class="logo-img">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== FORGOT PASSWORD VIEW ==================== -->
+        <section id="forgot-password-view" class="view icon-hidden">
+            <div class="fp-full-layout">
+                <!-- Back Link (Global for this view) -->
+                <a href="#" class="btn-back-login global-back-link">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M19 12H5" stroke="#666" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                        <path d="M12 19L5 12L12 5" stroke="#666" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                    <span id="fp-back-text">Quay lại đăng nhập</span>
+                </a>
+
+                <div class="fp-content-wrapper">
+
+                    <!-- Step 1: Phone Input -->
+                    <div id="fp-step-1" class="fp-step active-step">
+                        <h1 class="fp-title">Quên mật khẩu</h1>
+                        <p class="fp-subtitle">Nhập số điện thoại để nhận mã OTP</p>
+
+                        <div class="form-group">
+                            <label class="fp-label">Số điện thoại</label>
+                            <div class="input-with-icon">
+                                <span class="input-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                        xmlns="http://www.w3.org/2000/svg">
+                                        <rect x="7" y="4" width="10" height="16" rx="2" stroke="#ccc"
+                                            stroke-width="2" />
+                                        <path d="M11 17H13" stroke="#ccc" stroke-width="2" stroke-linecap="round" />
+                                    </svg>
+                                </span>
+                                <input type="text" id="fp-phone" class="input-field-styled pl-icon"
+                                    placeholder="Nhập số điện thoại">
+                            </div>
+                        </div>
+                        <button id="btn-send-otp" class="btn btn-primary btn-fp-action">Gửi mã OTP</button>
+                    </div>
+
+                    <!-- Step 2: OTP Input -->
+                    <div id="fp-step-2" class="fp-step icon-hidden">
+                        <h1 class="fp-title">Nhập mã OTP</h1>
+                        <p class="fp-subtitle">Mã đã được gửi đến số điện thoại của bạn</p>
+
+                        <div class="form-group">
+                            <label class="fp-label">Mã OTP</label>
+                            <div class="otp-inputs-container">
+                                <input type="text" maxlength="1" class="otp-box-styled">
+                                <input type="text" maxlength="1" class="otp-box-styled">
+                                <input type="text" maxlength="1" class="otp-box-styled">
+                                <input type="text" maxlength="1" class="otp-box-styled">
+                                <input type="text" maxlength="1" class="otp-box-styled">
+                            </div>
+                        </div>
+
+                        <div class="fp-extra-row">
+                            <span>Chưa nhận được mã? <a href="#" class="link-text-blue">Gửi lại</a></span>
+                        </div>
+
+                        <button id="btn-verify-otp" class="btn btn-primary btn-fp-action">Tiếp tục</button>
+                    </div>
+
+                    <!-- Step 3: New Password (No confirm) -->
+                    <div id="fp-step-3" class="fp-step icon-hidden">
+                        <h1 class="fp-title">Nhập mật khẩu mới</h1>
+                        <!-- No subtitle in screenshot 3 layout, or maybe just spacing -->
+                        <div style="height: 20px;"></div>
+
+                        <div class="form-group">
+                            <label class="fp-label">Tạo mật khẩu mới</label>
+                            <input type="password" id="fp-new-pass" class="input-field-styled"
+                                placeholder="Nhập mật khẩu mới">
+                        </div>
+
+                        <!-- Removed Confirm Password -->
+
+                        <button id="btn-change-pass" class="btn btn-primary btn-fp-action">Đổi mật khẩu</button>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== HOME VIEW ==================== -->
+        <section id="home-view" class="view icon-hidden">
+            <header class="main-header">
+                <div class="header-left">
+                    <div class="header-logo-container">
+                        <img src="{% static 'core/img/LogoNTMart.jfif' %}" alt="NT Mart" class="header-logo">
+                    </div>
+                    <a href="#" id="btn-home-logo" class="header-brand-link">
+                        <span class="header-brand-text">NTMart</span>
+                    </a>
+                </div>
+                <div class="header-right">
+                    <div class="user-info">
+                        <span class="user-name">NT_Mart123</span>
+                        <div class="user-avatar-img">
+                            <img src="{% static 'core/img/LogoNTMart.jfif' %}" alt="User">
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Horizontal Navigation -->
+            <nav class="top-nav">
+                <ul class="nav-list-horizontal">
+                    <li class="nav-item-h" data-tab="pos">Bán hàng</li>
+                    <li class="nav-item-h" data-tab="import">Nhập hàng</li>
+                    <li class="nav-item-h" data-tab="customers">Khách hàng</li>
+                    <li class="nav-item-h" data-tab="suppliers">Nhà cung cấp</li>
+                    <li class="nav-item-h" data-tab="products">Hàng hóa</li>
+                    <li class="nav-item-h" data-tab="reports">Báo cáo</li>
+                </ul>
+            </nav>
+
+            <div class="main-layout-vertical">
+                <!-- Content Area -->
+                <main class="content-area">
+
+                    <!-- HOME PLACEHOLDER (Default) -->
+                    <div id="home-placeholder" class="placeholder-content">
+                        <div class="big-logo-container">
+                            <img src="{% static 'core/img/LogoNTMart.jfif' %}" alt="NT Mart Big">
+                        </div>
+                    </div>
+
+                    <!-- 1. SALES (POS) PAGE -->
+                    <div id="page-pos" class="page-section icon-hidden">
+                        <div class="page-header">
+                            <div class="header-text">
+                                <h2 class="page-title">Quản lý bán hàng</h2>
+                                <p class="page-subtitle">Quản lý thông tin bán hàng</p>
+                            </div>
+                            <button class="btn-add-new" id="btn-add-sales">
+                                <span class="icon-plus">+</span> Thêm phiếu bán hàng
+                            </button>
+                        </div>
+                        <div class="search-container">
+                            <span class="search-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            </span>
+                            <input type="text" class="search-input" placeholder="Tìm kiếm phiếu bán hàng theo từ khóa">
+                        </div>
+                        <div id="pos-list-container" class="data-list-cards"></div>
+                        <div class="pagination-container"></div>
+                    </div>
+
+                    <!-- 2. IMPORT PAGE -->
+                    <div id="page-import" class="page-section icon-hidden">
+                        <div class="page-header">
+                            <div class="header-text">
+                                <h2 class="page-title">Quản lý nhập hàng</h2>
+                                <p class="page-subtitle">Quản lý thông tin nhập hàng</p>
+                            </div>
+                            <button class="btn-add-new" id="btn-add-import">
+                                <span class="icon-plus">+</span> Thêm phiếu nhập hàng
+                            </button>
+                        </div>
+                        <div class="search-container">
+                            <span class="search-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            </span>
+                            <input type="text" class="search-input" placeholder="Tìm kiếm phiếu nhập hàng theo từ khóa">
+                        </div>
+                        <div id="import-list-container" class="data-list-cards"></div>
+                        <div class="pagination-container"></div>
+                    </div>
+
+                    <!-- 3. CUSTOMERS PAGE -->
+                    <div id="page-customers" class="page-section icon-hidden">
+                        <div class="page-header">
+                            <div class="header-text">
+                                <h2 class="page-title">Quản lý khách hàng</h2>
+                                <p class="page-subtitle">Quản lý thông tin của khách hàng</p>
+                            </div>
+                            <button class="btn-add-new">
+                                <span class="icon-plus">+</span> Thêm khách hàng
+                            </button>
+                        </div>
+                        <div class="search-container">
+                            <span class="search-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            </span>
+                            <input type="text" class="search-input" placeholder="Tìm kiếm khách hàng">
+                        </div>
+                        <div class="table-frame">
+                            <h3 class="table-title">Danh sách khách hàng</h3>
+                            <p class="table-subtitle">Quản lý thông tin chi tiết khách hàng</p>
+                            <div id="customers-table-container">
+                                <!-- Table injected here -->
+                            </div>
+                        </div>
+                        <!-- Pagination -->
+                        <div class="pagination-container"></div>
+                    </div>
+
+                    <!-- 4. SUPPLIERS PAGE -->
+                    <div id="page-suppliers" class="page-section icon-hidden">
+                        <div class="page-header">
+                            <div class="header-text">
+                                <h2 class="page-title">Quản lý nhà cung cấp</h2>
+                                <p class="page-subtitle">Quản lý thông tin của nhà cung cấp</p>
+                            </div>
+                            <button class="btn-add-new">
+                                <span class="icon-plus">+</span> Thêm nhà cung cấp
+                            </button>
+                        </div>
+                        <div class="search-container">
+                            <span class="search-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            </span>
+                            <input type="text" class="search-input" placeholder="Tìm kiếm nhà cung cấp">
+                        </div>
+                        <div class="table-frame">
+                            <h3 class="table-title">Danh sách nhà cung cấp</h3>
+                            <p class="table-subtitle">Quản lý thông tin chi tiết nhà cung cấp</p>
+                            <div id="suppliers-table-container">
+                                <!-- Table injected here -->
+                            </div>
+                        </div>
+                        <!-- Pagination -->
+                        <div class="pagination-container"></div>
+                    </div>
+
+                    <!-- 5. PRODUCTS PAGE -->
+                    <div id="page-products" class="page-section icon-hidden">
+                        <div class="page-header">
+                            <div class="header-text">
+                                <h2 class="page-title">Quản lý hàng hóa</h2>
+                                <p class="page-subtitle">Quản lý thông tin hàng hóa, giá cả và tồn kho</p>
+                            </div>
+                            <div class="header-actions" style="display: flex; gap: 10px;">
+                                <div class="custom-dropdown" id="product-manage-dropdown">
+                                    <button class="dropdown-toggle">
+                                        Quản lý
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="black"
+                                            stroke-width="2" style="margin-left: 5px;">
+                                            <polyline points="15 18 9 12 15 6"></polyline>
+                                        </svg>
+                                    </button>
+                                    <div class="dropdown-menu">
+                                        <div class="dropdown-item">Quản lý giá bán</div>
+                                        <div class="dropdown-item">Quản lý cảnh báo tồn kho</div>
+                                        <div class="dropdown-item">Quản lý cảnh báo ngày hết hạn</div>
+                                    </div>
+                                </div>
+                                <button class="btn-add-new">
+                                    <span class="icon-plus">+</span> Thêm hàng hóa
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Top Actions (Search & Filter) -->
+                        <!-- Search Bar (Full Width) -->
+                        <div class="search-container" style="width: 100%; margin-bottom: 20px;">
+                            <span class="search-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            </span>
+                            <input type="text" class="search-input" placeholder="Tìm kiếm hàng hóa">
+                        </div>
+
+                        <!-- Data Table -->
+                        <div class="table-frame" style="margin-top: 10px; flex: 1;">
+                            <div id="products-table-container">
+                                <!-- JS Injected -->
+                            </div>
+                        </div>
+
+                        <!-- Pagination -->
+                        <div class="pagination-container"></div>
+
+                        <!-- Footer Dashboard -->
+                        <div class="product-stats-footer">
+                            <div class="stat-card">
+                                <div class="stat-label">Tổng sản phẩm</div>
+                                <div class="stat-number red-text" id="stat-total-products">0</div>
+                                <div class="stat-subtitle">Sản phẩm đang hoạt động</div>
+                            </div>
+                            <div class="stat-card warning">
+                                <div class="stat-label">Sắp hết hàng</div>
+                                <div class="stat-number red-text" id="stat-low-stock">0</div>
+                                <div class="stat-subtitle">Sản phẩm cần nhập thêm</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">Hết hàng</div>
+                                <div class="stat-number red-text" id="stat-out-stock">0</div>
+                                <div class="stat-subtitle">Sản phẩm hết hàng</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5a. PRODUCT PRICE MANAGEMENT -->
+                    <div id="page-product-price" class="page-section icon-hidden">
+                        <div class="page-header">
+                            <div class="header-text">
+                                <h2 class="page-title">Quản lý giá bán</h2>
+                                <p class="page-subtitle">Cập nhật phần trăm lợi nhuận cho từng mặt hàng</p>
+                            </div>
+                            <button class="btn-action-gray btn-exit-subview">Thoát</button>
+                        </div>
+
+                        <div class="search-container" style="width: 100%; margin-bottom: 20px;">
+                            <span class="search-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            </span>
+                            <input type="text" class="search-input" placeholder="Tìm kiếm sản phẩm theo tên/mã/...">
+                        </div>
+
+                        <div
+                            style="background: #E8F0E4; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 5px solid #4CAF50;">
+                            <strong>Công thức tính giá:</strong>
+                            <p style="margin: 5px 0 0 0;">Giá bán = Giá nhập + (Phần trăm giá bán * Giá nhập)</p>
+                        </div>
+
+                        <div class="table-frame" style="margin-top: 10px; flex: 1;">
+                            <div id="product-price-table-container"></div>
+                        </div>
+                        <div class="pagination-container"></div>
+                    </div>
+
+                    <!-- 5b. PRODUCT INVENTORY MANAGEMENT -->
+                    <div id="page-product-inventory" class="page-section icon-hidden">
+                        <div class="page-header">
+                            <div class="header-text">
+                                <h2 class="page-title">Quản lý cảnh báo tồn kho</h2>
+                                <p class="page-subtitle">Cập nhật mức tồn kho tối thiểu cho từng mặt hàng</p>
+                            </div>
+                            <button class="btn-action-gray btn-exit-subview">Thoát</button>
+                        </div>
+
+                        <div class="search-container" style="width: 100%; margin-bottom: 20px;">
+                            <span class="search-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            </span>
+                            <input type="text" class="search-input" placeholder="Tìm kiếm sản phẩm theo tên/mã/...">
+                        </div>
+
+                        <!-- Status Cards -->
+                        <div class="status-cards-row" style="display: flex; gap: 20px; margin-bottom: 20px;">
+                            <div class="status-card-box" style="border-left: 5px solid #4CAF50;">
+                                <div class="sc-title">Còn hàng</div>
+                                <div class="sc-value green-text" id="inv-stat-ok">0</div>
+                                <div class="sc-desc">Sản phẩm đang hoạt động</div>
+                            </div>
+                            <div class="status-card-box" style="border-left: 5px solid #FF9800;">
+                                <div class="sc-title">Sắp hết hàng</div>
+                                <div class="sc-value orange-text" id="inv-stat-low">0</div>
+                                <div class="sc-desc">Sản phẩm cần nhập thêm</div>
+                            </div>
+                            <div class="status-card-box" style="border-left: 5px solid #F44336;">
+                                <div class="sc-title">Hết hàng</div>
+                                <div class="sc-value red-text" id="inv-stat-out">0</div>
+                                <div class="sc-desc">Sản phẩm hết hàng</div>
+                            </div>
+                        </div>
+
+                        <div class="table-frame" style="margin-top: 10px; flex: 1;">
+                            <div id="product-inventory-table-container"></div>
+                        </div>
+                        <div class="pagination-container"></div>
+                    </div>
+
+                    <!-- 5c. PRODUCT EXPIRY MANAGEMENT -->
+                    <div id="page-product-expiry" class="page-section icon-hidden">
+                        <div class="page-header">
+                            <div class="header-text">
+                                <h2 class="page-title">Quản lý cảnh báo ngày hết hạn</h2>
+                                <p class="page-subtitle">Cập nhật mức cảnh báo ngày hết hạn cho từng mặt hàng</p>
+                            </div>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <div class="date-badge"
+                                    style="border: 1px solid #ccc; padding: 8px 12px; border-radius: 6px; font-weight: 500;">
+                                    📅 Ngày hiện tại: <span id="current-date-display">28/11/2025</span>
+                                </div>
+                                <button class="btn-action-gray btn-exit-subview">Thoát</button>
+                            </div>
+                        </div>
+
+                        <div class="search-container" style="width: 100%; margin-bottom: 20px;">
+                            <span class="search-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            </span>
+                            <input type="text" class="search-input" placeholder="Tìm kiếm sản phẩm theo tên/mã/...">
+                        </div>
+
+                        <!-- Status Cards -->
+                        <div class="status-cards-row" style="display: flex; gap: 20px; margin-bottom: 20px;">
+                            <div class="status-card-box" style="border-left: 5px solid #4CAF50;">
+                                <div class="sc-title">Còn hạn</div>
+                                <div class="sc-value green-text" id="exp-stat-ok">0</div>
+                                <div class="sc-desc">Sản phẩm còn hạn</div>
+                            </div>
+                            <div class="status-card-box" style="border-left: 5px solid #FF9800;">
+                                <div class="sc-title">Sắp hết hạn</div>
+                                <div class="sc-value orange-text" id="exp-stat-near">0</div>
+                                <div class="sc-desc">Sản phẩm sắp hết hạn</div>
+                            </div>
+                            <div class="status-card-box" style="border-left: 5px solid #F44336;">
+                                <div class="sc-title">Hết hạn</div>
+                                <div class="sc-value red-text" id="exp-stat-expired">0</div>
+                                <div class="sc-desc">Sản phẩm hết hạn</div>
+                            </div>
+                        </div>
+
+                        <div class="table-frame" style="margin-top: 10px; flex: 1;">
+                            <div id="product-expiry-table-container"></div>
+                        </div>
+                        <div class="pagination-container"></div>
+                    </div>
+
+                    <!-- 6. REPORTS PAGE -->
+                    <div id="page-reports" class="page-section icon-hidden">
+                        <div class="page-header">
+                            <div class="header-text">
+                                <h2 class="page-title">Báo cáo doanh thu</h2>
+                                <p class="page-subtitle">Xem báo cáo chi tiết về kinh doanh</p>
+                            </div>
+                            <button class="btn-export">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" style="margin-right: 5px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                Xuất báo cáo
+                            </button>
+                        </div>
+
+                        <div class="report-filter-bar">
+                            <!-- 1. Category -->
+                            <div class="filter-group">
+                                <label>Danh mục báo cáo</label>
+                                <select id="report-category" class="filter-select">
+                                    <option value="revenue">Báo cáo doanh thu, lợi nhuận</option>
+                                    <option value="inventory">Báo cáo hàng tồn</option>
+                                    <option value="top_selling">Báo cáo mặt hàng bán chạy/kém</option>
+                                </select>
+                            </div>
+
+                            <!-- 2. Time Scale -->
+                            <div class="filter-group">
+                                <label>Loại thời gian</label>
+                                <select id="report-time-scale" class="filter-select">
+                                    <option value="day">Ngày</option>
+                                    <option value="week" selected>Tuần</option>
+                                    <option value="month">Tháng</option>
+                                    <option value="year">Năm</option>
+                                </select>
+                            </div>
+
+                            <!-- 3. Date Range -->
+                            <div class="filter-group">
+                                <label>Khoảng thời gian</label>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <input type="date" id="report-start-date" class="filter-date">
+                                    <span style="color: #999;">-</span>
+                                    <input type="date" id="report-end-date" class="filter-date">
+                                </div>
+                            </div>
+
+                            <!-- 4. Display Type -->
+                            <div class="filter-group">
+                                <label>Loại hiển thị</label>
+                                <select id="report-display-type" class="filter-select">
+                                    <option value="table">Báo cáo dạng bảng chi tiết</option>
+                                    <option value="chart">Báo cáo dạng biểu đồ</option>
+                                </select>
+                            </div>
+
+                            <!-- Action Button -->
+                            <div class="filter-group" style="justify-content: flex-end;">
+                                <button id="btn-report-apply" class="btn-action-gray">
+                                    <span style="font-size: 16px; margin-right: 5px;">↻</span> Cập nhật
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="report-action-bar">
+                            <button class="btn-action-gray"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" style="margin-right: 5px;">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg> Thay đổi dữ liệu</button>
+                            <button class="btn-action-gray"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" style="margin-right: 5px;">
+                                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                                </svg> Lọc dữ liệu</button>
+                        </div>
+
+                        <!-- Visualization Placeholder -->
+                        <div class="report-visualization-area">
+                            <div class="empty-state-text">Chưa có dữ liệu được trích xuất</div>
+                        </div>
+                    </div>
+
+                </main>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Modals -->
+    <!-- Modals -->
+    <div id="modal-container" class="modal-overlay icon-hidden">
+        <div class="modal-box">
+            <div class="modal-close-x">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="black" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+            </div>
+
+            <div id="modal-content-error" class="modal-content icon-hidden">
+                <div class="modal-icon-svg error-svg">
+                    <svg width="60" height="60" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="40" cy="40" r="40" fill="#ED1B24" />
+                        <path d="M40 20V50" stroke="white" stroke-width="6" stroke-linecap="round" />
+                        <circle cx="40" cy="62" r="4" fill="white" />
+                    </svg>
+                </div>
+                <p class="modal-text">Tài khoản hoặc mật khẩu<br>không đúng vui lòng nhập lại</p>
+            </div>
+
+            <div id="modal-content-success" class="modal-content icon-hidden">
+                <div class="modal-icon-svg success-svg">
+                    <svg width="60" height="60" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="40" cy="40" r="40" fill="#4CAF50" />
+                        <path d="M24 40L36 52L56 28" stroke="white" stroke-width="6" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </div>
+                <p id="success-msg" class="modal-text">Đổi mật khẩu thành công</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Detail Modal -->
+    <div id="transaction-modal" class="modal-overlay icon-hidden">
+        <div class="transaction-modal-box">
+            <div class="tm-header">
+                <div class="tm-title-row">
+                    <span class="tm-title-prefix">Chi tiết phiếu bán</span>
+                    <span class="tm-id" id="tm-id">#BH00000001</span>
+                </div>
+                <div class="tm-close-btn" id="tm-close-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="tm-info-bar">
+                <div class="tm-info-group">
+                    <label>Khách hàng</label>
+                    <div class="tm-info-val" id="tm-customer">Nguyễn Văn A</div>
+                    <div class="tm-info-sub" id="tm-phone">0905123456</div>
+                </div>
+                <div class="tm-info-group" style="align-items: flex-start;">
+                    <label>Ngày bán</label>
+                    <div class="tm-info-val" id="tm-date">10-04-2025</div>
+                </div>
+            </div>
+
+            <div class="tm-body-label">Danh sách hàng hóa</div>
+
+            <div class="tm-body">
+                <div id="tm-items-list"></div>
+            </div>
+
+            <div class="tm-footer">
+                <div class="tm-total-row">
+                    <span class="tm-total-label">TỔNG THÀNH TIỀN:</span>
+                    <span class="tm-total-val" id="tm-total">170.000 <u>đ</u></span>
+                </div>
+                <button class="btn btn-dark tm-exit-btn" id="tm-exit-btn">Thoát</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-container-form" class="modal-overlay icon-hidden">
+        <div class="modal-box" style="width: 500px;">
+            <div class="modal-close-x" id="modal-close-form">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="black" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+            </div>
+
+            <h2 class="modal-title" style="margin-top: 0; margin-bottom: 20px; font-size: 20px; font-weight: bold;">
+                Title Here</h2>
+
+            <form id="form-generic">
+                <div id="form-fields-container"></div>
+
+                <div class="modal-actions"
+                    style="display: flex; gap: 15px;justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="btn" id="btn-cancel-form"
+                        style="background: #fff; border: 1px solid #ccc; color: #000; border-radius: 8px; padding: 10px 30px; font-weight: bold;">Hủy</button>
+
+                    <button type="submit" id="btn-save-form" class="btn btn-disabled"
+                        style="border-radius: 8px; padding: 10px 30px; display: flex; align-items: center; gap: 8px; color: #fff; border: none;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H16L21 8V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21Z"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M17 21V13H7V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                            <path d="M7 3V8H15" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                        </svg>
+                        Lưu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-container-confirm-delete" class="modal-overlay icon-hidden">
+        <div class="modal-box" style="width: 400px; text-align: center; padding: 30px;">
+            <div class="modal-close-x" id="modal-close-confirm-delete">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="black" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="#4CAF50" stroke-width="2" />
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" stroke="#4CAF50" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                    <path d="M12 17h.01" stroke="#4CAF50" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+            </div>
+
+            <h3 style="font-size: 20px; font-weight: 600; color: #000; margin-bottom: 30px;">
+                Bạn có chắc chắn muốn xóa không?
+            </h3>
+
+            <div style="display: flex; gap: 20px; justify-content: center;">
+                <button id="btn-cancel-delete" class="btn"
+                    style="background: #fff; border: 1px solid #ccc; color: #000; min-width: 100px;">
+                    Hủy
+                </button>
+                <button id="btn-confirm-delete" class="btn"
+                    style="background: #4CAF50; color: white; border: none; min-width: 100px;">
+                    Xóa
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transaction Edit Modal -->
+    <div id="modal-container-transaction-edit" class="modal-overlay icon-hidden">
+        <div class="transaction-modal-box" style="width: 900px; max-width: 95%;">
+            <div class="tm-header" style="border-bottom: none; padding-bottom: 0;">
+                <div class="tm-title-row" style="font-size: 20px; color: #004085;">
+                    <span id="tm-edit-title" style="font-weight: 700; text-transform: uppercase;">PHIẾU BÁN HÀNG</span>
+                    <span id="tm-edit-code" style="font-weight: 700; margin-left: 5px;">[CODE]</span>
+                </div>
+                <div class="tm-close-btn" id="tm-edit-close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="tm-body" style="height: auto; max-height: 80vh; overflow-y: auto; padding: 20px 24px;">
+                <form id="form-transaction-edit">
+
+                    <h4 id="tm-party-title" style="margin: 0 0 15px 0; font-size: 18px; font-weight: 700;">Thông tin đối tác</h4>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px 40px; margin-bottom: 30px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="font-weight: 700; margin-bottom: 5px; display: block;">Ngày lập phiếu</label>
+                            <input type="text" id="tm-edit-date" class="input-field-styled modal-input-rounded" disabled
+                                style="background: #f0f0f0;">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label id="tm-name-label" style="font-weight: 700; margin-bottom: 5px; display: block;">Tên đối tác</label>
+                            <select id="tm-edit-name" class="input-field-styled modal-input-rounded"></select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="font-weight: 700; margin-bottom: 5px; display: block;">Số điện thoại</label>
+                            <input type="text" id="tm-edit-phone" class="input-field-styled modal-input-rounded">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="font-weight: 700; margin-bottom: 5px; display: block;">Địa chỉ</label>
+                            <input type="text" id="tm-edit-address" class="input-field-styled modal-input-rounded">
+                        </div>
+                    </div>
+
+                    <hr style="border: 0; border-top: 2px solid #eee; margin-bottom: 20px;">
+
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="margin: 0; font-size: 18px; font-weight: 700;">Danh sách hàng hóa</h4>
+                        <button type="button" id="btn-add-row" class="btn"
+                            style="background: #4CAF50; color: white; padding: 6px 15px; font-weight: 600; display: flex; align-items: center; gap: 5px;">
+                            <div
+                                style="background: white; color: #4CAF50; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; line-height: 1;">
+                                +</div>
+                            Thêm
+                        </button>
+                    </div>
+
+                    <table class="entity-table" id="tm-edit-table" style="margin-bottom: 20px;">
+                        <thead style="background: #f0f0f0;">
+                            <tr>
+                                <th style="text-align: left; width: 35%; padding: 10px;">Tên hàng hóa</th>
+                                <th style="text-align: center; width: 10%;">Số lượng</th>
+                                <th style="text-align: center; width: 10%;">Đơn vị tính</th>
+                                <th style="text-align: right; width: 15%;">Đơn giá</th>
+                                <th style="text-align: right; width: 20%;">Thành tiền</th>
+                                <th style="text-align: center; width: 10%;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tm-edit-tbody">
+                        </tbody>
+                    </table>
+
+                </form>
+            </div>
+
+            <div class="tm-footer"
+                style="justify-content: flex-end; gap: 20px; background: transparent; border-top: none; padding: 10px 24px 24px 24px; flex-direction: column; align-items: flex-end;">
+
+                <div class="tm-total-row"
+                    style="background: #e0e0e0; padding: 10px 20px; border-radius: 4px; display: flex; gap: 20px; align-items: center;">
+                    <span class="tm-total-label" style="font-weight: 700; font-size: 16px;">TỔNG TIỀN:</span>
+                    <span class="tm-total-val" id="tm-edit-total"
+                        style="font-weight: 700; font-size: 18px; color: #28a745;">0 đ</span>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 10px; display: flex; gap: 15px;">
+                    <button type="button" class="btn" id="btn-cancel-edit-transaction"
+                        style="background: #D32F2F; color: white; min-width: 100px;">Hủy</button>
+                    <button type="button" id="btn-save-edit-transaction" class="btn btn-primary-valid"
+                        style="background: #0069D9; min-width: 100px; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v13a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                            <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                        Lưu
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{% static 'core/js/renderer.js' %}"></script>
+</body>
+
+</html>
