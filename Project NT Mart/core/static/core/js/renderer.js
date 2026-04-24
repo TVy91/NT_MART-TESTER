@@ -1,4 +1,4 @@
-// =========================================================
+﻿// =========================================================
 // FIREBASE CONFIGURATION (PLACEHOLDER)
 // =========================================================
 // FIXME: User instructions:
@@ -87,7 +87,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- UTILS ---
     const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('vi-VN').format(amount) + ' <u>đ</u>';
+        return new Intl.NumberFormat('vi-VN').format(amount) + ' <u>&#273;</u>';
+    };
+
+    const getStockStatus = (stockValue) => {
+        const stock = parseInt(stockValue, 10) || 0;
+        if (stock <= 0) {
+            return { text: 'Hết hàng', badgeClass: 'status-red' };
+        }
+        if (stock < 10) {
+            return { text: 'Sắp hết hàng', badgeClass: 'status-orange' };
+        }
+        return { text: 'Còn hàng', badgeClass: 'status-green' };
     };
 
     // --- FUNCTIONS ---
@@ -427,8 +438,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Stock
             const stock = randomInt(0, 500);
             let status = 'Còn hàng';
-            if (stock === 0) status = 'Hết hàng';
-            else if (stock <= 10) status = 'Sắp hết';
+            if (stock <= 0) status = 'H?t h�ng';
+            else if (stock < 10) status = 'S?p h?t h�ng';
 
             // Expiry
             const today = new Date();
@@ -1021,14 +1032,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         </tr>
                     </thead>
                     <tbody>
-                        ${currentData.map(item => `
+                        ${currentData.map(item => {
+            const stockStatus = getStockStatus(item.stock);
+            return `
                         <tr>
                             <td style="text-align: left">${item.id}</td>
                             <td style="text-align: left"><span class="entity-main-text">${item.name}</span></td>
                             <td style="text-align: center">${item.unit}</td>
                             <td style="text-align: right">${item.price}</td>
                             <td style="text-align: center">${item.stock}</td>
-                            <td style="text-align: center"><span class="status-badge ${item.stock > 10 ? 'status-green' : (item.stock > 0 ? 'status-orange' : 'status-red')}">${item.status}</span></td>
+                            <td style="text-align: center"><span class="status-badge ${stockStatus.badgeClass}">${stockStatus.text}</span></td>
                             <td style="text-align: center">
                                  <div class="card-actions" style="justify-content: center">
                                     <button class="icon-btn btn-edit" data-id="${item.id}" data-type="products"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></button>
@@ -1036,16 +1049,17 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                             </td>
                         </tr>
-                        `).join('')}
+                        `;
+        }).join('')}
                     </tbody>
                 </table>
             `;
 
             // Calculate Stats
             const total = productData.length;
-            // Logic: High (>10), Low (1-10), Out (0)
-            const low = productData.filter(i => i.stock > 0 && i.stock <= 10).length;
-            const out = productData.filter(i => i.stock === 0).length;
+            // Logic: High (>=10), Low (1-9), Out (<=0)
+            const low = productData.filter(i => i.stock > 0 && i.stock < 10).length;
+            const out = productData.filter(i => i.stock <= 0).length;
 
             // Update DOM
             const elTotal = document.getElementById('stat-total-products');
@@ -1222,6 +1236,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             this.currentConfig = null;
             this.state = {}; // Stores form values
+            this.inputRefs = {};
 
             this.bindEvents();
         }
@@ -1233,10 +1248,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         open(config) {
-            this.currentConfig = config;
+            this.currentConfig = this.normalizeConfig(config);
             this.state = {};
-            this.titleEl.textContent = config.title;
-            this.renderFields(config.fields);
+            this.titleEl.textContent = this.currentConfig.title;
+            this.renderFields(this.currentConfig.fields);
+            this.autoCalculateSellingPrice();
 
             this.validate();
 
@@ -1246,14 +1262,43 @@ document.addEventListener('DOMContentLoaded', () => {
             if (firstInput) firstInput.focus();
         }
 
+        normalizeConfig(config) {
+            const normalized = {
+                ...config,
+                fields: Array.isArray(config.fields) ? [...config.fields] : []
+            };
+
+            if (config && config.productFormPreset) {
+                const meta = config.productFieldDefaults || {};
+                normalized.fields = normalized.fields.filter(
+                    (f) => !['price', 'importPrice', 'profitMargin', 'expiryDate'].includes(f.key)
+                );
+                const extraFields = [
+                    { key: 'importPrice', label: 'Giá nhập', type: 'number', required: false, value: meta.importPrice ?? 0, marginTop: '15px' },
+                    { key: 'profitMargin', label: '% Lợi nhuận', type: 'number', required: false, value: meta.profitMargin ?? 0, marginTop: '15px' },
+                    { key: 'price', label: 'Giá bán', type: 'number', required: false, value: meta.price ?? 0, marginTop: '15px' },
+                    { key: 'expiryDate', label: 'Ngày hết hạn', type: 'date', required: false, value: meta.expiryDate ?? '', marginTop: '15px' }
+                ];
+
+                extraFields.forEach((field) => {
+                    const exists = normalized.fields.some((f) => f.key === field.key);
+                    if (!exists) normalized.fields.push(field);
+                });
+            }
+
+            return normalized;
+        }
+
         close() {
             this.modal.classList.add('icon-hidden');
             this.container.innerHTML = '';
             this.currentConfig = null;
+            this.inputRefs = {};
         }
 
         renderFields(fields) {
             this.container.innerHTML = '';
+            this.inputRefs = {};
 
             fields.forEach(field => {
                 const group = document.createElement('div');
@@ -1289,6 +1334,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     input.placeholder = field.placeholder || '';
                     if (field.hidden) input.type = 'hidden';
                     input.value = field.value || '';
+                    this.inputRefs[field.key] = input;
+
+                    if (field.key === 'price' && this.currentConfig && this.currentConfig.productFormPreset) {
+                        input.readOnly = true;
+                        input.style.backgroundColor = '#f5f5f5';
+                        input.style.color = '#555';
+                    }
 
                     if (field.key === 'phone') {
                         input.addEventListener('input', (e) => {
@@ -1296,9 +1348,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             this.state[field.key] = e.target.value;
                             this.validate();
                         });
-                    } else if (field.key === 'price' || field.key === 'stock') {
+                    } else if (['price', 'stock', 'importPrice', 'profitMargin'].includes(field.key)) {
                         input.addEventListener('input', (e) => {
                             this.state[field.key] = e.target.value; // Keep raw for now
+                            if (field.key === 'importPrice' || field.key === 'profitMargin') {
+                                this.autoCalculateSellingPrice();
+                            }
                             this.validate();
                         });
                     } else {
@@ -1316,6 +1371,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 this.container.appendChild(group);
             });
+        }
+
+        parseNumericValue(value) {
+            const normalized = String(value || '').replace(/[^0-9]/g, '');
+            return parseInt(normalized, 10) || 0;
+        }
+
+        autoCalculateSellingPrice() {
+            if (!this.currentConfig || !this.currentConfig.productFormPreset) return;
+
+            const importPrice = this.parseNumericValue(this.state.importPrice);
+            const percent = this.parseNumericValue(this.state.profitMargin);
+            const sellingPrice = Math.round(importPrice + ((percent / 100) * importPrice));
+
+            this.state.price = String(sellingPrice);
+            if (this.inputRefs.price) {
+                this.inputRefs.price.value = String(sellingPrice);
+            }
         }
 
         renderUnitField(container, field) {
@@ -1421,12 +1494,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- SPECIFIC FORM LOGIC ---
+    const toDateInputValue = (dateStr) => {
+        if (!dateStr || typeof dateStr !== 'string') return '';
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+
+        const sep = dateStr.includes('/') ? '/' : '-';
+        const parts = dateStr.split(sep);
+        if (parts.length !== 3) return '';
+
+        if (parts[0].length === 4) {
+            const [y, m, d] = parts;
+            return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        }
+
+        const [d, m, y] = parts;
+        if (!y) return '';
+        return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    };
+
+    const fromDateInputValue = (dateStr) => {
+        if (!dateStr || typeof dateStr !== 'string') return '';
+        const parts = dateStr.split('-');
+        if (parts.length !== 3) return '';
+        const [y, m, d] = parts;
+        return `${d}/${m}/${y}`;
+    };
 
     // 1. ADD PRODUCT
     const btnOpenAddProduct = document.querySelector('#page-products .btn-add-new');
     if (btnOpenAddProduct) {
         btnOpenAddProduct.addEventListener('click', () => {
             modalForm.open({
+                productFormPreset: 'add',
+                productFieldDefaults: { importPrice: 0, profitMargin: 0, price: 0, expiryDate: '' },
                 title: 'Thêm hàng hóa',
                 fields: [
                     { key: 'name', label: 'Tên hàng hóa', type: 'text', required: true, placeholder: 'Nhập tên hàng hóa' },
@@ -1440,17 +1540,25 @@ document.addEventListener('DOMContentLoaded', () => {
                         return num > max ? num : max;
                     }, 0);
                     const code = 'HH' + String(maxId + 1).padStart(8, '0');
+                    const importPriceVal = parseInt(data.importPrice, 10) || 0;
+                    const profitMarginVal = parseInt(data.profitMargin, 10) || 0;
+                    let priceVal = parseInt(data.price, 10) || 0;
+                    if (priceVal <= 0 && importPriceVal > 0) {
+                        priceVal = Math.round(importPriceVal * (1 + (profitMarginVal / 100)));
+                    }
+                    const expiryDateVal = fromDateInputValue(data.expiryDate);
+                    const currentStock = 0;
 
                     const newProduct = {
                         id: code,
                         name: data.name,
                         unit: data.unit,
-                        priceRaw: 0,
-                        importPrice: 0,
-                        price: '0 đ', // Default
+                        priceRaw: priceVal,
+                        importPrice: importPriceVal,
+                        price: formatCurrency(priceVal),
                         stock: 0,
                         status: 'Hết hàng',
-                        expiryDate: ''
+                        expiryDate: expiryDateVal
                     };
                     productData.push(newProduct);
                     filteredProductData = [...productData];
@@ -1469,9 +1577,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!product) return;
 
         // Extract numeric price
-        const priceNum = String(product.price).replace(/[^0-9]/g, '');
+        const priceNum = String(product.priceRaw || product.price || '').replace(/[^0-9]/g, '');
+        const importPriceNum = String(product.importPrice || '').replace(/[^0-9]/g, '') || '0';
+        let profitMarginNum = 0;
+        if (parseInt(importPriceNum, 10) > 0 && parseInt(priceNum, 10) > 0) {
+            profitMarginNum = Math.round(((parseInt(priceNum, 10) - parseInt(importPriceNum, 10)) / parseInt(importPriceNum, 10)) * 100);
+        }
 
         modalForm.open({
+            productFormPreset: 'edit',
+            productFieldDefaults: {
+                importPrice: importPriceNum,
+                profitMargin: profitMarginNum,
+                price: priceNum,
+                expiryDate: toDateInputValue(product.expiryDate)
+            },
             title: 'Cập nhật hàng hóa',
             fields: [
                 { key: 'name', label: 'Tên hàng hóa', type: 'text', required: true, value: product.name },
@@ -1483,17 +1603,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 const index = productData.findIndex(p => p.id === id);
                 if (index !== -1) {
                     // Format Price
-                    const pVal = parseInt(data.price) || 0;
-                    const formattedPrice = new Intl.NumberFormat('vi-VN').format(pVal) + ' đ';
+                    const importPriceVal = parseInt(data.importPrice, 10) || 0;
+                    const marginVal = parseInt(data.profitMargin, 10) || 0;
+                    let pVal = parseInt(data.price, 10) || 0;
+                    if (pVal <= 0 && importPriceVal > 0) {
+                        pVal = Math.round(importPriceVal * (1 + (marginVal / 100)));
+                    }
+                    const expiryDateVal = fromDateInputValue(data.expiryDate);
+                    const parsedStock = parseInt(data.stock, 10);
+                    const currentStock = Number.isNaN(parsedStock) ? (parseInt(productData[index].stock, 10) || 0) : parsedStock;
 
                     productData[index] = {
                         ...productData[index],
                         name: data.name,
                         unit: data.unit,
                         priceRaw: pVal,
-                        price: formattedPrice,
-                        stock: parseInt(data.stock) || 0,
-                        status: (parseInt(data.stock) || 0) === 0 ? 'Hết hàng' : ((parseInt(data.stock) || 0) <= 10 ? 'Sắp hết hàng' : 'Còn hàng')
+                        importPrice: importPriceVal,
+                        price: formatCurrency(pVal),
+                        stock: currentStock,
+                        expiryDate: expiryDateVal,
+                        status: currentStock <= 0 ? 'H?t h�ng' : ((currentStock < 10) ? 'S?p h?t h�ng' : 'C�n h�ng')
                     };
                     filteredProductData = [...productData];
                     window.syncWithBackend('update', 'products', productData[index]);
@@ -1532,7 +1661,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         phone: data.phone,
                         address: data.address,
                         orders: 0,
-                        total: '0 <u>đ</u>',
+                        total: '0 <u>&#273;</u>',
                         note: data.note || ''
                     };
 
@@ -2752,9 +2881,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentData = filteredProductData.slice(start, end);
 
         // Stats (Calculate on Full Data, not filtered)
-        const totalOk = productData.filter(i => i.stock > 10).length;
-        const totalLow = productData.filter(i => i.stock > 0 && i.stock <= 10).length;
-        const totalOut = productData.filter(i => i.stock === 0).length;
+        const totalOk = productData.filter(i => i.stock >= 10).length;
+        const totalLow = productData.filter(i => i.stock > 0 && i.stock < 10).length;
+        const totalOut = productData.filter(i => i.stock <= 0).length;
 
         const elOk = document.getElementById('inv-stat-ok');
         const elLow = document.getElementById('inv-stat-low');
@@ -2781,10 +2910,10 @@ document.addEventListener('DOMContentLoaded', () => {
             let badgeStyle = 'background:#E0E0E0; color:#333;'; // Default
             let statusText = 'Còn hàng';
 
-            if (item.stock === 0) {
+            if (item.stock <= 0) {
                 badgeStyle = 'background:#FFEBEE; color:#C62828;';
                 statusText = 'Hết hàng';
-            } else if (item.stock <= 10) {
+            } else if (item.stock < 10) {
                 badgeStyle = 'background:#FFF3E0; color:#EF6C00;'; // Using orange for Low
                 statusText = 'Sắp hết';
             }
@@ -3349,7 +3478,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             </tr>
                         </thead>
                         <tbody>
-                            ${productData.map(p => `
+                            ${productData.map(p => {
+                                const stockStatus = getStockStatus(p.stock);
+                                return `
                                 <tr>
                                     <td style="padding:10px;">${p.id}</td>
                                     <td>${p.name}</td>
@@ -3358,12 +3489,13 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <td style="text-align:right;">${p.price}</td>
                                     <td style="text-align:center; font-weight:bold;">${p.stock}</td>
                                     <td style="text-align:center;">
-                                        <span class="status-badge ${p.stock == 0 ? 'status-red' : (p.stock < 10 ? 'status-orange' : 'status-green')}">
-                                            ${p.status}
+                                        <span class="status-badge ${stockStatus.badgeClass}">
+                                            ${stockStatus.text}
                                         </span>
                                     </td>
                                 </tr>
-                            `).join('')}
+                            `;
+                            }).join('')}
                         </tbody>
                     </table>
                 </div>
